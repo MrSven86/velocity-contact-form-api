@@ -1,0 +1,9 @@
+{
+  "name": "velocity-contact-form-api",
+  "version": "1.0.0",
+  "description": "Simple API for handling contact forms via Resend",
+  "type": "module",
+  "dependencies": {
+    "resend": "^3.0.0"
+  }
+}
