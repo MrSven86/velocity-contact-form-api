@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, message, website } = req.body;
+  const { name, email, phone, message, website, clientEmail } = req.body;
 
   // Basic validation
   if (!name || !email || !message) {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   try {
     const data = await resend.emails.send({
       from: 'Contact Form <onboarding@resend.dev>',
-      to: 'tomas.gustav.eriksson@gmail.com',
+      to: clientEmail || 'tomas.gustav.eriksson@gmail.com',
       subject: `New Contact from ${name}${website ? ` - ${website}` : ''}`,
       html: `
         <h2>New Contact Form Submission</h2>
