@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
   try {
     const data = await resend.emails.send({
-      from: 'Contact Form <onboarding@resend.dev>',
+      from: 'Contact Form <noreply@velocityweb.org>',
       to: clientEmail || 'tomas.gustav.eriksson@gmail.com',
       subject: `New Contact from ${name}${website ? ` - ${website}` : ''}`,
       html: `
