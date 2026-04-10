@@ -1,31 +1,30 @@
 import { Resend } from 'resend';
+import twilio from 'twilio';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export default async function handler(req, res) {
-  // Enable CORS so your Lovable site can call this
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight request
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, message, website, clientEmail } = req.body;
+  const { name, email, phone, message, website, clientEmail, clientWhatsapp } = req.body;
 
-  // Basic validation
   if (!name || !email || !message) {
     return res.status(400).json({ error: 'Name, email, and message are required' });
   }
 
   try {
+    // Send email via Resend
     const data = await resend.emails.send({
       from: 'Contact Form <noreply@velocityweb.org>',
       to: clientEmail || 'tomas.gustav.eriksson@gmail.com',
@@ -41,31 +40,28 @@ export default async function handler(req, res) {
         <hr>
         <p style="color: #666; font-size: 12px;">Sent from Velocity Web contact form</p>
       `,
-      text: `
-New Contact Form Submission
-
-Name: ${name}
-Email: ${email}
-Phone: ${phone || 'Not provided'}
-${website ? `Website: ${website}` : ''}
-
-Message:
-${message}
-
----
-Sent from Velocity Web contact form
-      `
+      text: `New Contact Form Submission\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'Not provided'}\n${website ? `Website: ${website}\n` : ''}Message:\n${message}`
     });
+
+    // Send WhatsApp notification to client if clientWhatsapp is provided
+    if (clientWhatsapp) {
+      await twilioClient.messages.create({
+        from: process.env.TWILIO_WHATSAPP_FROM,
+        to: `whatsapp:${clientWhatsapp}`,
+        body: `🔔 Nueva consulta recibida!\n\nNombre: ${name}\nTeléfono: ${phone || 'No proporcionado'}\nEmail: ${email}\nMensaje: ${message}`
+      });
+    }
 
     return res.status(200).json({ 
       success: true, 
       message: 'Email sent successfully',
       id: data.id 
     });
+
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error:', error);
     return res.status(500).json({ 
-      error: 'Failed to send email',
+      error: 'Failed to send',
       details: error.message 
     });
   }
