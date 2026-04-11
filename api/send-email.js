@@ -17,8 +17,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, email, phone, message, website, clientEmail, clientWhatsapp } = req.body;
-
+const { name, email, phone, message, website, clientEmail, clientWhatsapp, clientName } = req.body;
+  
   if (!name || !email || !message) {
     return res.status(400).json({ error: 'Name, email, and message are required' });
   }
@@ -52,6 +52,18 @@ export default async function handler(req, res) {
       });
     }
 
+// Confirmation email to person who submitted
+await resend.emails.send({
+  from: 'Velocity Web <noreply@velocityweb.org>',
+  to: email,
+  subject: 'Recibimos tu consulta',
+  html: `
+    <p>Hola ${name},</p>
+    <p>Recibimos tu consulta. Te contactamos en menos de 24 horas.</p>
+    <p>— ${clientName || 'El equipo'}</p>
+  `
+});
+    
     return res.status(200).json({ 
       success: true, 
       message: 'Email sent successfully',
