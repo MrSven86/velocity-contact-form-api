@@ -1,8 +1,6 @@
 import { Resend } from 'resend';
-import twilio from 'twilio';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,14 +15,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-const { name, email, phone, message, website, clientEmail, clientWhatsapp, clientName } = req.body;
-  
+  const { name, email, phone, message, website, clientEmail, clientName } = req.body;
+
   if (!name || !email || !message) {
     return res.status(400).json({ error: 'Name, email, and message are required' });
   }
 
   try {
-    // Send email via Resend
     const data = await resend.emails.send({
       from: 'Contact Form <noreply@velocityweb.org>',
       to: clientEmail || 'tomas.gustav.eriksson@gmail.com',
@@ -43,38 +40,27 @@ const { name, email, phone, message, website, clientEmail, clientWhatsapp, clien
       text: `New Contact Form Submission\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'Not provided'}\n${website ? `Website: ${website}\n` : ''}Message:\n${message}`
     });
 
-    // Send WhatsApp notification to client if clientWhatsapp is provided
-    if (clientWhatsapp) {
-      await twilioClient.messages.create({
-        from: process.env.TWILIO_WHATSAPP_FROM,
-        to: `whatsapp:${clientWhatsapp}`,
-        body: `🔔 Nueva consulta recibida!\n\nNombre: ${name}\nTeléfono: ${phone || 'No proporcionado'}\nEmail: ${email}\nMensaje: ${message}`
-      });
-    }
-
-// Confirmation email to person who submitted
-await resend.emails.send({
-  from: 'Velocity Web <noreply@velocityweb.org>',
-  to: email,
-  subject: 'Recibimos tu consulta',
-  html: `
-    <p>Hola ${name},</p>
-    <p>Recibimos tu consulta. Te contactamos en menos de 24 horas.</p>
-    <p>— ${clientName || 'El equipo'}</p>
-  `
-});
-    
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Email sent successfully',
-      id: data.id 
+    await resend.emails.send({
+      from: 'Velocity Web <noreply@velocityweb.org>',
+      to: email,
+      subject: 'We received your inquiry',
+      html: `
+        <p>Hi ${name},</p>
+        <p>We received your message. We'll get back to you within 24 hours.</p>
+        <p>— ${clientName || 'The team'}</p>
+      `
     });
 
+    return res.status(200).json({
+      success: true,
+      message: 'Email sent successfully',
+      id: data.id
+    });
   } catch (error) {
     console.error('Error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to send',
-      details: error.message 
+      details: error.message
     });
   }
 }
